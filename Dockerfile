@@ -19,7 +19,8 @@ RUN yum -y install \
     freetype-devel \
     libart_lgpl-devel \
     gcc \
-    groff
+    groff \
+    fakeroot
 
 # Set up an RVM with Ruby 2.2.2
 RUN gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
