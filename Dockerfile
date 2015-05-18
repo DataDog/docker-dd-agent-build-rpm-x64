@@ -7,7 +7,6 @@ RUN yum -y install \
     curl \
     gpg \
     which \
-    fakeroot \
     # Dependencies below are for rrdtool..
     intltool \
     gettext \
@@ -38,7 +37,8 @@ RUN curl -o /tmp/go1.3.3.linux-amd64.tar.gz https://storage.googleapis.com/golan
 RUN yum -y install \
     git \
     install \
-    perl-ExtUtils-MakeMaker
+    perl-ExtUtils-MakeMaker \
+    fakeroot
 
 RUN git config --global user.email "package@datadoghq.com"
 RUN git config --global user.name "Centos Omnibus Package"
