@@ -42,14 +42,16 @@ RUN yum -y install \
 
 # Install tar >> 1.23 so that Omnibus can use the -J option
 RUN \curl -o /tmp/tar123.tar.gz http://ftp.gnu.org/gnu/tar/tar-1.23.tar.gz
-RUN cd /tmp && tar -xzf /tmp/tar123.tar.gz 
+RUN cd /tmp && tar -xzf /tmp/tar123.tar.gz
 RUN rm -f /bin/tar /bin/gtar
-RUN cd /tmp/tar-1.23 && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/ && make && make install && ln -sf /bin/tar /bin/gtar 
+RUN cd /tmp/tar-1.23 && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/ && make && make install && ln -sf /bin/tar /bin/gtar
 
 RUN git config --global user.email "package@datadoghq.com"
 RUN git config --global user.name "Centos Omnibus Package"
 RUN git clone https://github.com/DataDog/dd-agent-omnibus.git
+# TODO: remove the checkout line after the merge to master
 RUN cd dd-agent-omnibus && \
+    git checkout etienne/omnibus-4-migration && \
     /bin/bash -l -c "bundle install --binstubs"
 
 VOLUME ["/dd-agent-omnibus/pkg"]
