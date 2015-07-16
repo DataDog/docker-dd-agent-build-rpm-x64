@@ -5,18 +5,18 @@ machine:
 general:
   branches:
     ignore:
-      - /.*/
+      - /^(?!etienne).*/
   artifacts:
     - "pkg"
 
 dependencies:
   pre:
-    - mkdir -p ~/pkg
-    - mkdir -p ~/cache
+    - mkdir -p ~/pkg ~/cache ~/keys
+    - echo -e $RPM_GPG_KEY > /home/ubuntu/keys/RPM-SIGNING-KEY.private
   cache_directories:
     - "~/cache"
   post:
-    - docker run -e OMNIBUS_APPEND_TIMESTAMP=no -e OMNIBUS_BRANCH=$OMNIBUS_BRANCH -e AGENT_BRANCH=$AGENT_BRANCH -e AGENT_VERSION=$AGENT_VERSION -v ~/pkg:/dd-agent-omnibus/pkg -v ~/cache:/var/cache/omnibus datadog/docker-dd-agent-build-rpm-x64
+    - docker run -e RPM_SIGNING_PASSPHRASE=$RPM_SIGNING_PASSPHRASE -e OMNIBUS_BRANCH=$OMNIBUS_BRANCH -e AGENT_BRANCH=$AGENT_BRANCH -e AGENT_VERSION=$AGENT_VERSION -v /home/ubuntu/keys:/keys -v /home/ubuntu/pkg:/dd-agent-omnibus/pkg -v /home/ubuntu/cache:/var/cache/omnibus datadog/docker-dd-agent-build-rpm-x64:omnibusfour
 
 
 test:
