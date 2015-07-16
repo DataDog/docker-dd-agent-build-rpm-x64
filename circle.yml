@@ -5,7 +5,7 @@ machine:
 general:
   branches:
     ignore:
-      - /^(?!etienne).*/
+      - /.*/
   artifacts:
     - "pkg"
 
