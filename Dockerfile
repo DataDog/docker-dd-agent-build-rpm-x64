@@ -49,9 +49,14 @@ RUN cd /tmp/tar-1.23 && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/ && make 
 RUN git config --global user.email "package@datadoghq.com"
 RUN git config --global user.name "Centos Omnibus Package"
 RUN git clone https://github.com/DataDog/dd-agent-omnibus.git
+RUN cd dd-agent-omnibus && git checkout tristan/integration
 # TODO: remove the checkout line after the merge to master
+RUN git clone https://github.com/tmichelet/playground.git
+# TODO: use real repo
 RUN cd dd-agent-omnibus && \
     /bin/bash -l -c "bundle install --binstubs"
+
+RUN echo -e '[datadog]\nname = Datadog, Inc.\nbaseurl = http://yum.datadoghq.com/rpm/x86_64/\nenabled=1\ngpgcheck=1\npriority=1\ngpgkey=http://yum.datadoghq.com/DATADOG_RPM_KEY.public' > /etc/yum.repos.d/datadog.repo
 
 VOLUME ["/dd-agent-omnibus/pkg"]
 
