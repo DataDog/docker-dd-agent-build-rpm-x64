@@ -89,13 +89,18 @@ RUN /bin/bash -l -c "CPPFLAGS='-I/usr/local/rvm/gems/ruby-2.2.2/include' rvm ins
 RUN git config --global user.email "package@datadoghq.com" && \
     git config --global user.name "Centos Omnibus Package" && \
     git clone https://github.com/DataDog/dd-agent-omnibus.git
-# TODO: remove the checkout line after the merge to master
+
 RUN cd dd-agent-omnibus && \
     /bin/bash -l -c "bundle install --binstubs"
+
+RUN git clone https://github.com/DataDog/integrations-extras.git
+RUN git clone https://github.com/DataDog/integrations-core.git
 
 # bootstap our CERTS
 RUN /opt/curl/bin/curl -kfsSL curl.haxx.se/ca/cacert.pem \
                        -o $(/bin/bash -l -c "ruby -ropenssl -e 'puts OpenSSL::X509::DEFAULT_CERT_FILE'")
+
+RUN echo -e '[datadog]\nname = Datadog, Inc.\nbaseurl = http://yum.datadoghq.com/rpm/x86_64/\nenabled=1\ngpgcheck=1\npriority=1\ngpgkey=http://yum.datadoghq.com/DATADOG_RPM_KEY.public' > /etc/yum.repos.d/datadog.repo
 
 VOLUME ["/dd-agent-omnibus/pkg"]
 
