@@ -1,4 +1,4 @@
-FROM centos:5
+FROM centos:6
 MAINTAINER Remi Hakim @remh
 
 RUN yum -y install \
@@ -33,11 +33,11 @@ RUN curl -o /tmp/go1.3.3.linux-amd64.tar.gz https://storage.googleapis.com/golan
     tar -C /usr/local -xzf /tmp/go1.3.3.linux-amd64.tar.gz && \
     echo "PATH=$PATH:/usr/local/go/bin" | tee /etc/profile.d/go.sh
 
-# Upgrade openssl
-RUN curl -L -o /tmp/rpmforge-release-0.5.3-1.el5.rf.x86_64.rpm http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el5.rf.x86_64.rpm && \
-    rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt && \
-    yum -y localinstall /tmp/rpmforge-release-0.5.3-1.el5.rf.x86_64.rpm && \
-    sed -i '/rpmforge-extras/,/^enabled\|^\[/s/^enabled.*/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
+# # Upgrade openssl
+RUN curl -L -o /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm http://repository.it4i.cz/mirrors/repoforge/redhat/el6/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm && \
+     rpm --import https://repoforge.cu.be/RPM-GPG-KEY.dag.txt && \
+     yum -y localinstall /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm  && \
+     sed -i '/rpmforge-extras/,/^enabled\|^\[/s/^enabled.*/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
 
 RUN yum -y install \
     install \
@@ -83,6 +83,8 @@ RUN mkdir -p /etc/ld.so.conf.d/ && echo "/opt/curl/lib" > /etc/ld.so.conf.d/optc
 
 RUN /bin/bash -l -c "CPPFLAGS='-I/usr/local/rvm/gems/ruby-2.2.2/include' rvm install 2.2.2 --with-openssl-dir=/opt/openssl" && \
     /bin/bash -l -c "rvm --default use 2.2.2" && \
+    opt/curl/bin/curl -kfsSL curl.haxx.se/ca/cacert.pem \
+                       -o $(/bin/bash -l -c "ruby -ropenssl -e 'puts OpenSSL::X509::DEFAULT_CERT_FILE'") && \
     /bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && \
     rm -rf /usr/local/rvm/src/ruby-2.2.2
 
