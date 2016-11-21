@@ -91,7 +91,7 @@ RUN git config --global user.email "package@datadoghq.com" && \
     git clone https://github.com/DataDog/dd-agent-omnibus.git
 
 RUN cd dd-agent-omnibus && \
-    /bin/bash -l -c "OMNIBUS_RUBY_BRANCH='datadog-5.0.0' bundle install --binstubs"
+    /bin/bash -l -c "OMNIBUS_RUBY_BRANCH='datadog-5.5.0' bundle install --binstubs"
 
 RUN git clone https://github.com/DataDog/integrations-extras.git
 RUN git clone https://github.com/DataDog/integrations-core.git
