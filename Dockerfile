@@ -34,9 +34,8 @@ RUN curl -o /tmp/go1.3.3.linux-amd64.tar.gz https://storage.googleapis.com/golan
     echo "PATH=$PATH:/usr/local/go/bin" | tee /etc/profile.d/go.sh
 
 # Upgrade openssl
-RUN curl -L -o /tmp/rpmforge-release-0.5.3-1.el5.rf.x86_64.rpm http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el5.rf.x86_64.rpm && \
-    rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt && \
-    yum -y localinstall /tmp/rpmforge-release-0.5.3-1.el5.rf.x86_64.rpm && \
+RUN rpm -Uvh  http://repoforge.eecs.wsu.edu/redhat/el5/en/x86_64/rpmforge/RPMS/$(curl -s http://repoforge.eecs.wsu.edu/redhat/el5/en/x86_64/rpmforge/RPMS/ | grep rpmforge-release | grep x86_64 | grep el5 | sort | tail -n1 | sed 's%.*>\(rpmforge\-release\-.*.rpm\)<.*%\1%')
+RUN sed -i 's/apt\.sw\.be/repoforge.eecs.wsu.edu/g' /etc/yum.repos.d/rpmforge.repo && \
     sed -i '/rpmforge-extras/,/^enabled\|^\[/s/^enabled.*/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
 
 RUN yum -y install \
@@ -70,7 +69,7 @@ RUN curl -o /tmp/curl-7.46.0.tar.gz http://curl.askapache.com/download/curl-7.46
     cd /tmp/curl-7.46.0 && LIBS="-ldl" ./configure --enable-static --prefix=/opt/curl --with-ssl=/opt/openssl && make all && make install && \
     cd - && rm -rf /tmp/curl-7.46.0 && rm -f /tmp/curl-7.46.0.tar.gz
 
-RUN curl -o /tmp/git-2.7.0.tar.gz https://www.kernel.org/pub/software/scm/git/git-2.7.0.tar.gz && \
+RUN /opt/curl/bin/curl -o /tmp/git-2.7.0.tar.gz https://www.kernel.org/pub/software/scm/git/git-2.7.0.tar.gz && \
     cd /tmp && tar -xzf /tmp/git-2.7.0.tar.gz && \
     cd /tmp/git-2.7.0 && make configure && ./configure --with-ssl --prefix=/usr \
        OPENSSLDIR=/opt/openssl \
@@ -81,10 +80,12 @@ RUN curl -o /tmp/git-2.7.0.tar.gz https://www.kernel.org/pub/software/scm/git/gi
 
 RUN mkdir -p /etc/ld.so.conf.d/ && echo "/opt/curl/lib" > /etc/ld.so.conf.d/optcurl.conf && ldconfig
 
+# setup ruby 2.2.2 with bootstrap ruby, setting up the CERTS
 RUN /bin/bash -l -c "CPPFLAGS='-I/usr/local/rvm/gems/ruby-2.2.2/include' rvm install 2.2.2 --with-openssl-dir=/opt/openssl" && \
     /bin/bash -l -c "rvm --default use 2.2.2" && \
-    /bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && \
-    rm -rf /usr/local/rvm/src/ruby-2.2.2
+    /opt/curl/bin/curl -kfsSL curl.haxx.se/ca/cacert.pem \
+                       -o $(/bin/bash -l -c "ruby -ropenssl -e 'puts OpenSSL::X509::DEFAULT_CERT_FILE'") && \
+    /bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && rm -rf /usr/local/rvm/src/ruby-2.2.2
 
 RUN git config --global user.email "package@datadoghq.com" && \
     git config --global user.name "Centos Omnibus Package" && \
@@ -95,10 +96,6 @@ RUN cd dd-agent-omnibus && \
 
 RUN git clone https://github.com/DataDog/integrations-extras.git
 RUN git clone https://github.com/DataDog/integrations-core.git
-
-# bootstap our CERTS
-RUN /opt/curl/bin/curl -kfsSL curl.haxx.se/ca/cacert.pem \
-                       -o $(/bin/bash -l -c "ruby -ropenssl -e 'puts OpenSSL::X509::DEFAULT_CERT_FILE'")
 
 RUN echo -e '[datadog]\nname = Datadog, Inc.\nbaseurl = http://yum.datadoghq.com/rpm/x86_64/\nenabled=1\ngpgcheck=1\npriority=1\ngpgkey=http://yum.datadoghq.com/DATADOG_RPM_KEY.public' > /etc/yum.repos.d/datadog.repo
 
