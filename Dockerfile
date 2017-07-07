@@ -29,8 +29,8 @@ RUN curl -sSL https://get.rvm.io | bash -s stable && \
     rm -rf /usr/local/rvm/src/ruby-2.1.5
 
 # Install go (required by to build gohai)
-RUN curl -o /tmp/go1.3.3.linux-amd64.tar.gz https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf /tmp/go1.3.3.linux-amd64.tar.gz && \
+RUN curl -o /tmp/go1.7.5.linux-amd64.tar.gz https://storage.googleapis.com/golang/go1.7.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf /tmp/go1.7.5.linux-amd64.tar.gz && \
     echo "PATH=$PATH:/usr/local/go/bin" | tee /etc/profile.d/go.sh
 
 # Upgrade openssl
