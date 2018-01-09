@@ -24,7 +24,7 @@ VOLUME ["/dd-agent-omnibus/pkg"]
 ENTRYPOINT /bin/bash -l /new_entrypoiny.sh
 ```
 
-Build with `docker build . -t DataDog/docker-dd-agent-build-rpm-x64:20180101` and push `docker push DataDog/docker-dd-agent-build-rpm-x64:20180101`.
+Build with `docker build . -t DataDog/docker-dd-agent-build-rpm-x64:20180108` and push `docker push DataDog/docker-dd-agent-build-rpm-x64:20180108`.
 
 Only once you're absolutely positive that works can you update the `latest` tag, after identifying a valid backup tag for the image exists.
 
