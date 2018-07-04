@@ -5,7 +5,7 @@ jobs:
     machine: true
     steps:
       - run: mkdir -p ~/pkg ~/cache ~/keys
-      - run: echo "$RELEASE_VERSION $OMNIBUS_BRANCH" >> ~/cache_key.txt
+      - run: echo "$RELEASE_VERSION $OMNIBUS_BRANCH" > ~/cache_key.txt
       - restore_cache:
           keys:
             - omnibus-cache-{{ checksum "~/cache_key.txt" }} 
@@ -14,7 +14,12 @@ jobs:
       - save_cache: 
           key: omnibus-cache-{{ checksum "~/cache_key.txt" }}
           paths:
-            - "~/cache"
+            - ~/cache
       - store_artifacts:
           path: ~/pkg
 
+workflows:
+  version: 2
+  build_rpm:
+    jobs:
+      - build
