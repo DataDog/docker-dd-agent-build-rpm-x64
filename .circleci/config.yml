@@ -1,0 +1,28 @@
+version: 2
+
+jobs:
+  build:
+    machine: true
+    branches:
+      ignore:
+        - /.*/
+    steps:
+      - run: mkdir -p ~/pkg ~/cache ~/keys
+      - run: echo "$RELEASE_VERSION $OMNIBUS_BRANCH" > ~/cache_key.txt
+      - restore_cache:
+          keys:
+            - omnibus-rpm-cache-{{ checksum "~/cache_key.txt" }} 
+      - run: echo -e $RPM_GPG_KEY > /home/circleci/keys/RPM-SIGNING-KEY.private
+      - run: docker run -e RELEASE_VERSION=$RELEASE_VERSION -e RPM_SIGNING_PASSPHRASE=$RPM_SIGNING_PASSPHRASE -e OMNIBUS_BRANCH=$OMNIBUS_BRANCH -v /home/circleci/keys:/keys -v /home/circleci/pkg:/dd-agent-omnibus/pkg -v /home/circleci/cache:/var/cache/omnibus datadog/docker-dd-agent-build-rpm-x64
+      - save_cache: 
+          key: omnibus-rpm-cache-{{ checksum "~/cache_key.txt" }}
+          paths:
+            - ~/cache
+      - store_artifacts:
+          path: ~/pkg
+
+workflows:
+  version: 2
+  build_rpm:
+    jobs:
+      - build
