@@ -87,6 +87,10 @@ RUN /bin/bash -l -c "CPPFLAGS='-I/usr/local/rvm/gems/ruby-2.2.2/include' rvm ins
                        -o $(/bin/bash -l -c "ruby -ropenssl -e 'puts OpenSSL::X509::DEFAULT_CERT_FILE'") && \
     /bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && rm -rf /usr/local/rvm/src/ruby-2.2.2
 
+# Update go to 1.10.3
+RUN curl -o /tmp/go1.10.3.linux-amd64.tar.gz https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf /tmp/go1.10.3.linux-amd64.tar.gz
+
 RUN git config --global user.email "package@datadoghq.com" && \
     git config --global user.name "Centos Omnibus Package" && \
     git clone https://github.com/DataDog/dd-agent-omnibus.git
