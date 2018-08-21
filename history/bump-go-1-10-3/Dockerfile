@@ -1,4 +1,4 @@
-FROM datadog/docker-dd-agent-build-rpm-x64:latest
+FROM datadog/docker-dd-agent-build-rpm-x64:20180108
 MAINTAINER Remi Hakim @remh
 
 # Update go to 1.10.3
