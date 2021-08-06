@@ -1,17 +1,25 @@
 FROM centos:5
 MAINTAINER Remi Hakim @remh
 
-COPY ./CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo
-COPY ./libselinux.repo /etc/yum.repos.d/libselinux.repo
+ARG BUNDLER_VERSION_ARG=1.17.3
+ARG RUBY_VERSION_ARG=2.2.2
 
-RUN yum -y update
+COPY ./CentOS-Base.repo \
+     ./libselinux.repo /etc/yum.repos.d/
 
-RUN yum -y install \
-    rpm-build \
-    xz \
+RUN yum -y update && \
+    yum -y install \
+    automake \
+    autoconf \
     curl \
+    install \
+    fakeroot \
     gpg \
+    make \
+    perl-ExtUtils-MakeMaker \
+    rpm-build \
     which \
+    xz \
     # Dependencies below are for rrdtool..
     intltool \
     gettext \
@@ -30,21 +38,6 @@ RUN yum -y install \
     libffi-devel \
     libyaml-devel
 
-# RUN cd tmp && \
-#     wget https://www.openssl.org/source/openssl-1.0.2a.tar.gz && \
-#     tar -zxvf openssl-*.tar.gz && \
-#     cd openssl-*/ && \
-#     ./config -fpic shared && make && make install && \
-#     echo "/usr/local/ssl/lib" >> /etc/ld.so.conf && \
-#     ldconfig
-
-RUN yum -y install \
-    make \
-    automake \
-    autoconf \
-    install \
-    perl-ExtUtils-MakeMaker \
-    fakeroot
 
 RUN curl -o /tmp/openssl-1.0.2u.tar.gz http://artfiles.org/openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz && \
     cd /tmp && tar -xzf /tmp/openssl-1.0.2u.tar.gz && \
@@ -55,23 +48,20 @@ RUN curl -o /tmp/openssl-1.0.2u.tar.gz http://artfiles.org/openssl.org/source/ol
 COPY ./curl-7.46.0.tar.gz /tmp/curl-7.46.0.tar.gz
 
 RUN cd /tmp && tar -xzf /tmp/curl-7.46.0.tar.gz && \
-    cd /tmp/curl-7.46.0 && LIBS="-ldl" ./configure --enable-static --prefix=/opt/curl --with-ssl=/opt/openssl && make all && make install && \
-    cd - && rm -rf /tmp/curl-7.46.0 && rm -f /tmp/curl-7.46.0.tar.gz
+    cd /tmp/curl-7.46.0 && \
+    LIBS="-ldl" ./configure --enable-static --prefix=/opt/curl --with-ssl=/opt/openssl && \
+    make all && \
+    make install && \
+    cd - && \
+    rm -rf /tmp/curl-7.46.0 && \
+    rm -f /tmp/curl-7.46.0.tar.gz
 
-# # Upgrade openssl
-# RUN rpm -Uvh  http://repoforge.eecs.wsu.edu/redhat/el5/en/x86_64/rpmforge/RPMS/$(curl -s http://repoforge.eecs.wsu.edu/redhat/el5/en/x86_64/rpmforge/RPMS/ | grep rpmforge-release | grep x86_64 | grep el5 | sort | tail -n1 | sed 's%.*>\(rpmforge\-release\-.*.rpm\)<.*%\1%')
-# RUN sed -i 's/apt\.sw\.be/repoforge.eecs.wsu.edu/g' /etc/yum.repos.d/rpmforge.repo && \
-#     sed -i '/rpmforge-extras/,/^enabled\|^\[/s/^enabled.*/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
-#
-# RUN yum -y install \
-#     install \
-#     perl-ExtUtils-MakeMaker \
-#     fakeroot
 
 ENV PATH="/opt/curl/bin:${PATH}"
 
-# Set up an RVM with Ruby 2.2.2
-RUN gpg --keyserver hkp://pool.sks-keyservers.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+# Set up an RVM with Ruby 2.1.5
+# RUN gpg --keyserver hkp://keys.openpgp.org --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+RUN gpg --keyserver keyserver.ubuntu.com --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
 RUN curl -sSL https://get.rvm.io | bash -s stable && \
     /bin/bash -l -c "rvm requirements" && \
     /bin/bash -l -c "rvm install 2.1.5" && \
@@ -110,11 +100,13 @@ RUN /opt/curl/bin/curl -o /tmp/git-2.7.0.tar.gz -L https://www.kernel.org/pub/so
 RUN mkdir -p /etc/ld.so.conf.d/ && echo "/opt/curl/lib" > /etc/ld.so.conf.d/optcurl.conf && ldconfig
 
 # setup ruby 2.2.2 with bootstrap ruby, setting up the CERTS
-RUN /bin/bash -l -c "CPPFLAGS='-I/usr/local/rvm/gems/ruby-2.2.2/include' rvm install 2.2.2 --with-openssl-dir=/opt/openssl" && \
-    /bin/bash -l -c "rvm --default use 2.2.2" && \
+ENV CPPFLAGS "-I/usr/local/rvm/gems/ruby-$RUBY_VERSION_ARG/include"
+RUN /bin/bash -l -c "rvm install $RUBY_VERSION_ARG --with-openssl-dir=/opt/openssl" && \
+    /bin/bash -l -c "rvm --default use $RUBY_VERSION_ARG" && \
     /opt/curl/bin/curl -kfsSL curl.haxx.se/ca/cacert.pem \
                        -o $(/bin/bash -l -c "ruby -ropenssl -e 'puts OpenSSL::X509::DEFAULT_CERT_FILE'") && \
-    /bin/bash -l -c "gem install bundler -v 1.17.3" && rm -rf /usr/local/rvm/src/ruby-2.2.2
+    /bin/bash -l -c "gem install bundler -v $BUNDLER_VERSION_ARG" && rm -rf /usr/local/rvm/src/ruby-$RUBY_VERSION_ARG
+RUN unset CPPFLAGS
 
 # Update go to 1.10.3
 RUN curl -o /tmp/go1.10.3.linux-amd64.tar.gz https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
