@@ -3,6 +3,10 @@ MAINTAINER Remi Hakim @remh
 
 ARG BUNDLER_VERSION_ARG=1.17.3
 ARG RUBY_VERSION_ARG=2.2.2
+ARG GOLANG_VERSION_ARG=1.10.3
+ARG TAR_VERSION_ARG=1.23
+ARG GIT_VERSION_ARG=2.7.0
+ARG OPENSSL_VERSION_ARG=1.0.2u
 
 COPY ./CentOS-Base.repo \
      ./libselinux.repo /etc/yum.repos.d/
@@ -39,11 +43,11 @@ RUN yum -y update && \
     libyaml-devel
 
 
-RUN curl -o /tmp/openssl-1.0.2u.tar.gz http://artfiles.org/openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz && \
-    cd /tmp && tar -xzf /tmp/openssl-1.0.2u.tar.gz && \
-    cd /tmp/openssl-1.0.2u && ./Configure linux-x86_64 no-shared --openssldir=/opt/openssl -fPIC && make && make install && \
+RUN curl -o /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz http://artfiles.org/openssl.org/source/old/$(echo $OPENSSL_VERSION_ARG | awk '{print substr($0,0, length($0)-1)}')/openssl-$OPENSSL_VERSION_ARG.tar.gz && \
+    cd /tmp && tar -xzf /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz && \
+    cd /tmp/openssl-$OPENSSL_VERSION_ARG && ./Configure linux-x86_64 no-shared --openssldir=/opt/openssl -fPIC && make && make install && \
     echo "/usr/local/ssl/lib" >> /etc/ld.so.conf && ldconfig && \
-    cd - && rm -rf /tmp/openssl-1.0.2u && rm /tmp/openssl-1.0.2u.tar.gz
+    cd - && rm -rf /tmp/openssl-$OPENSSL_VERSION_ARG && rm /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz
 
 COPY ./curl-7.46.0.tar.gz /tmp/curl-7.46.0.tar.gz
 
@@ -67,18 +71,13 @@ RUN curl -sSL https://get.rvm.io | bash -s stable && \
     /bin/bash -l -c "rvm install 2.1.5" && \
     rm -rf /usr/local/rvm/src/ruby-2.1.5
 
-# Install go (required by to build gohai)
-RUN curl -o /tmp/go1.3.3.linux-amd64.tar.gz https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf /tmp/go1.3.3.linux-amd64.tar.gz && \
-    echo "PATH=$PATH:/usr/local/go/bin" | tee /etc/profile.d/go.sh
-
 # Install tar >> 1.23 so that Omnibus can use the -J option
-RUN curl -o /tmp/tar123.tar.gz -L http://ftp.gnu.org/gnu/tar/tar-1.23.tar.gz
-RUN cd /tmp && tar -xzf /tmp/tar123.tar.gz && \
+RUN curl -o /tmp/tar-$TAR_VERSION_ARG.tar.gz -L http://ftp.gnu.org/gnu/tar/tar-$TAR_VERSION_ARG.tar.gz
+RUN cd /tmp && tar -xzf /tmp/tar-$TAR_VERSION_ARG.tar.gz && \
     rm -f /bin/tar /bin/gtar && \
-    cd /tmp/tar-1.23 && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/ && make && make install && \
+    cd /tmp/tar-$TAR_VERSION_ARG && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/ && make && make install && \
     ln -sf /bin/tar /bin/gtar && \
-    cd - && rm -rf /tmp/tar123.tar.gz
+    cd - && rm -rf /tmp/tar-$TAR_VERSION_ARG.tar.gz
 
 # now build git
 # dependencies
@@ -88,14 +87,14 @@ RUN yum -y install \
     perl-devel \
     zlib-devel
 
-RUN /opt/curl/bin/curl -o /tmp/git-2.7.0.tar.gz -L https://www.kernel.org/pub/software/scm/git/git-2.7.0.tar.gz && \
-    cd /tmp && tar -xzf /tmp/git-2.7.0.tar.gz && \
-    cd /tmp/git-2.7.0 && make configure && ./configure --with-ssl --prefix=/usr \
+RUN /opt/curl/bin/curl -o /tmp/git-$GIT_VERSION_ARG.tar.gz -L https://www.kernel.org/pub/software/scm/git/git-$GIT_VERSION_ARG.tar.gz && \
+    cd /tmp && tar -xzf /tmp/git-$GIT_VERSION_ARG.tar.gz && \
+    cd /tmp/git-$GIT_VERSION_ARG && make configure && ./configure --with-ssl --prefix=/usr \
        OPENSSLDIR=/opt/openssl \
        CURLDIR=/opt/curl \
        CPPFLAGS="-I/opt/curl/include" \
        LDFLAGS="-L/opt/curl/lib" && make all && make install && \
-    cd - && rm -rf /tmp/git-2.7.0 && rm -f /tmp/git-2.7.0.tar.gz
+    cd - && rm -rf /tmp/git-$GIT_VERSION_ARG && rm -f /tmp/git-$GIT_VERSION_ARG.tar.gz
 
 RUN mkdir -p /etc/ld.so.conf.d/ && echo "/opt/curl/lib" > /etc/ld.so.conf.d/optcurl.conf && ldconfig
 
@@ -108,9 +107,12 @@ RUN /bin/bash -l -c "rvm install $RUBY_VERSION_ARG --with-openssl-dir=/opt/opens
     /bin/bash -l -c "gem install bundler -v $BUNDLER_VERSION_ARG" && rm -rf /usr/local/rvm/src/ruby-$RUBY_VERSION_ARG
 RUN unset CPPFLAGS
 
+# Install go (required by to build gohai)
 # Update go to 1.10.3
-RUN curl -o /tmp/go1.10.3.linux-amd64.tar.gz https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf /tmp/go1.10.3.linux-amd64.tar.gz
+RUN curl -o /tmp/go$GOLANG_VERSION_ARG.linux-amd64.tar.gz https://dl.google.com/go/go$GOLANG_VERSION_ARG.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf /tmp/go$GOLANG_VERSION_ARG.linux-amd64.tar.gz && \
+    echo "PATH=$PATH:/usr/local/go/bin" | tee /etc/profile.d/go.sh
+
 
 RUN git config --global user.email "package@datadoghq.com" && \
     git config --global user.name "Centos Omnibus Package" && \
