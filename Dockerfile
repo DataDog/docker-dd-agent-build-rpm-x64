@@ -1,4 +1,12 @@
-FROM centos:5
+FROM ubuntu as CURL_GETTER
+ENV CURL_VERSION=7.79.1
+ENV CURL_SHA256="0a89440848db3ba21d38b93b450d90fb84d4d0fa5562aa9c6933070b0eddc960"
+RUN apt-get update && apt-get install -y wget
+RUN wget https://github.com/moparisthebest/static-curl/releases/download/v${CURL_VERSION}/curl-amd64
+RUN echo "${CURL_SHA256}  curl-amd64" | sha256sum --check
+
+
+FROM centos:5.11
 MAINTAINER Remi Hakim @remh
 
 ARG BUNDLER_VERSION_ARG=1.17.3
@@ -8,14 +16,19 @@ ARG TAR_VERSION_ARG=1.23
 ARG GIT_VERSION_ARG=2.7.0
 ARG OPENSSL_VERSION_ARG=1.0.2u
 
+RUN rm -f /etc/yum.repos.d/*
+
 COPY ./CentOS-Base.repo \
      ./libselinux.repo /etc/yum.repos.d/
 
-RUN yum -y update && \
-    yum -y install \
+# Update curl with a statically linked binary
+COPY --from=CURL_GETTER /curl-amd64 /usr/local/bin/curl
+RUN chmod +x /usr/local/bin/curl
+
+RUN yum --disableplugin=fastestmirror -d10 -y update
+RUN yum  --disableplugin=fastestmirror -y install \
     automake \
     autoconf \
-    curl \
     install \
     fakeroot \
     gpg \
@@ -48,8 +61,6 @@ RUN curl -o /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz http://artfiles.org/openssl
     cd /tmp/openssl-$OPENSSL_VERSION_ARG && ./Configure linux-x86_64 no-shared --openssldir=/opt/openssl -fPIC && make && make install && \
     echo "/usr/local/ssl/lib" >> /etc/ld.so.conf && ldconfig && \
     cd - && rm -rf /tmp/openssl-$OPENSSL_VERSION_ARG && rm /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz
-
-COPY ./curl-7.46.0.tar.gz /tmp/curl-7.46.0.tar.gz
 
 RUN cd /tmp && tar -xzf /tmp/curl-7.46.0.tar.gz && \
     cd /tmp/curl-7.46.0 && \
