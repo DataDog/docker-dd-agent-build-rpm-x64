@@ -9,12 +9,13 @@ RUN echo "${CURL_SHA256}  curl-amd64" | sha256sum --check
 FROM centos:5.11
 MAINTAINER Remi Hakim @remh
 
+ENV PERL_VERSION 5.28.1
 ARG BUNDLER_VERSION_ARG=1.17.3
 ARG RUBY_VERSION_ARG=2.2.2
 ARG GOLANG_VERSION_ARG=1.10.3
 ARG TAR_VERSION_ARG=1.23
 ARG GIT_VERSION_ARG=2.7.0
-ARG OPENSSL_VERSION_ARG=1.0.2u
+ARG OPENSSL_VERSION_ARG=1.1.0j
 
 RUN rm -f /etc/yum.repos.d/*
 
@@ -55,6 +56,20 @@ RUN yum  --disableplugin=fastestmirror -y install \
     libffi-devel \
     libyaml-devel
 
+
+# Install Perl from source.
+# OpenSSL requires >= 5.10.0, repositories have 5.8.8.
+RUN set -ex; \
+    cd /usr/local/src; \
+    curl --insecure http://www.cpan.org/src/5.0/perl-$PERL_VERSION.tar.gz -LO; \
+    tar -xf perl-$PERL_VERSION.tar.gz; \
+    rm -f perl-$PERL_VERSION.tar.gz; \
+    cd perl-$PERL_VERSION; \
+    ./Configure -des; \
+    make -j $(grep -c processor /proc/cpuinfo); \
+    make install; \
+    cd ..; \
+    rm -rf perl-$PERL_VERSION
 
 RUN curl -o /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz http://artfiles.org/openssl.org/source/old/$(echo $OPENSSL_VERSION_ARG | awk '{print substr($0,0, length($0)-1)}')/openssl-$OPENSSL_VERSION_ARG.tar.gz && \
     cd /tmp && tar -xzf /tmp/openssl-$OPENSSL_VERSION_ARG.tar.gz && \
